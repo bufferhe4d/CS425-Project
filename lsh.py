@@ -8,13 +8,16 @@ import os.path
 class LSH:
     def __init__(self, data):
         self.data = data
+        self.buckets = None
+        self.vectors = None
+        self.num_vector = None
 
     def train(self, num_vector):
         dim = self.data.shape[1]
-
+        self.num_vector = num_vector
         random_vectors = []
         for i in range(10):
-            random_vectors.append(  np.random.randn(dim/10, num_vector) )
+            random_vectors.append(  np.random.randn(int(dim/10), num_vector) )
         bin_to_decimal = 1 << np.arange(num_vector - 1, -1, -1)
 
         table =[]
@@ -30,7 +33,21 @@ class LSH:
                 if bin_index not in table[i]:
                    table[i][bin_index] = []
                 table[i][bin_index].append(data_point)
-        return table
+        self.buckets = table
+        self.vectors = random_vectors
+
+    def query(self, movieId):
+        similar = {}
+        bin_to_decimal = 1 << np.arange(self.num_vector - 1, -1, -1)
+        datasplitted =  np.hsplit( self.data, 10 )
+        for i in range(10):
+            bit_arr = datasplitted[movieId].dot(self.vectors[i]) >= 0
+            bin_index = bit_arr.dot(bin_to_decimal)
+            k = self.buckets[i][bin_index]
+            similars.append(self.buckets[i][k])
+
+        return similars
+
 
 
 # configure file path
@@ -57,17 +74,18 @@ data = df_rating_matrix.values
 model = LSH(data)
 print(data)
 
-table = model.train(10)
+model.train(10)
 
 count = 0
-for i in table:
+""" for i in model.buckets:
     print("Table :")
     print(type(i))
     for j in i:
         count += 1
         print("-----------------------------------------------------------------bucket" +str(j))
         for value in i[j]:
-            print( df_movies['title'][value] )
+            print( df_movies['title'][value] ) """
 
 print("Count:", count)
 
+print(model.query(1))
