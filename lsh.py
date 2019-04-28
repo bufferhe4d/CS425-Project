@@ -57,5 +57,9 @@ model = LSH(data)
 
 table = model.train(10)
 
-print(table)
+count = 0
+for i in table:
+    print(len(table[i]))
+    count += 1
 
+print("Count:", count)
