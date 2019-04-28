@@ -11,10 +11,8 @@ class LSH:
 
     def train(self, num_vector):
         dim = self.data.shape[1]
-        
-        np.random.seed(seed)
 
-        random_vectors = np.random.randn(num_vector, dim)
+        random_vectors = np.random.randn(dim, num_vector)
         bin_to_decimal = 1 << np.arange(num_vector - 1, -1, -1)
 
         table = {}
@@ -23,7 +21,7 @@ class LSH:
         bin_index_bits = (self.data.dot(random_vectors) >= 0)
 
         # Encode bin index bits into integers
-        bin_index_arr = bin_index_bits.dot(powers_of_two)
+        bin_index_arr = bin_index_bits.dot(bin_to_decimal)
 
         for data_point, bin_index in enumerate(bin_index_arr):
             if bin_index not in table:
@@ -53,5 +51,11 @@ print(df_ratings.head(5))
 
 df_rating_matrix = df_ratings.pivot(index='movieId', columns='userId', values='rating').fillna(0)
 
+data = df_rating_matrix.values
 
+model = LSH(data)
+
+table = model.train(10)
+
+print(table)
 
