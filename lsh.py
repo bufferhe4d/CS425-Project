@@ -82,12 +82,10 @@ class LSH:
         for i in range(len(similars)):
             print(orig_data[similars[i]][movieId])
             cur_sim = 1 - spatial.distance.cosine(data[userId], data[similars[i]])
-            """ if orig_data[similars[i]][movieId] != 0 and userId != similars[i]:
-                sum_total += cur_sim*orig_data[similars[i]][movieId]
-                sim_total += cur_sim """
-            if userId != similars[i]:
+            if orig_data[similars[i]][movieId] != 0 and userId != similars[i]:
                 sum_total += cur_sim*orig_data[similars[i]][movieId]
                 sim_total += cur_sim
+            
         
         if sim_total == 0:
             return 0
