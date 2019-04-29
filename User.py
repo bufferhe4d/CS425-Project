@@ -16,12 +16,22 @@ class User:
         self.g = None
         self.privElgamalKey = None
         self.pubElgamalKey = None
+        self.encryptObj = None
     
     def setRating(self,ratings):
         self.ratings = ratings
     
     def genElgamalKey(self, p, g):
+        # generate elgamal keys according to parameters
         self.p = p
         self.g = g
         self.privElgamalKey = number.getRandomRange(2, self.p - 1, Random.new().read)
         self.pubElgamalKey = pow(g, self.privElgamalKey, self.p)
+
+    def getPubKey(self):
+        return self.pubElgamalKey
+    
+    def setServerPubKey(self, Y):
+        elgamal_tuple = (self.p, self.g, Y)
+        # consturct elgamal object from the server public key
+        self.encryptObj = ElGamal.consturct(elgamal_tuple)
