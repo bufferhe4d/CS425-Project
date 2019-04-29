@@ -37,14 +37,14 @@ class LSH:
         self.vectors = random_vectors
 
     def query(self, movieId):
-        similar = {}
+        similars = []
         bin_to_decimal = 1 << np.arange(self.num_vector - 1, -1, -1)
         datasplitted =  np.hsplit( self.data, 10 )
         for i in range(10):
-            bit_arr = datasplitted[movieId].dot(self.vectors[i]) >= 0
+            bit_arr = datasplitted[i][movieId].dot(self.vectors[i]) >= 0
             bin_index = bit_arr.dot(bin_to_decimal)
             k = self.buckets[i][bin_index]
-            similars.append(self.buckets[i][k])
+            similars.extend(k)
 
         return similars
 
