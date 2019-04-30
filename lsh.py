@@ -6,10 +6,11 @@ import os.path
 from scipy import spatial
 import sklearn.preprocessing as pp
 from scipy import sparse
+import pickle
 
 
 class LSH:
-    def __init__(self, data, orig_data):
+    def __init__(self, data, orig_data, sim_mat_load = False):
         self.data = data
         self.orig_data = orig_data
         self.buckets = None
@@ -17,7 +18,11 @@ class LSH:
         self.num_vector = None
         self.sparsedata = None
         self.div_num = 1
-        self.sim_mat = self.getSimilarity()
+        self.sparsedata = sparse.csc_matrix(data.astype(np.dtype('double')))
+        if not sim_mat_load:
+            self.sim_mat = self.getSimilarity()
+        else:
+            self.sim_mat = self.loadSimMat()
         print("similirez")
         self.aver_mov = self.getAverage()
 
@@ -98,7 +103,7 @@ class LSH:
             return sum_total/sim_total
     def getSimilarity(self):
         similarity = []
-        self.sparsedata = sparse.csc_matrix(data.astype(np.dtype('double')))
+        
         sparsenorm = pp.normalize( self.sparsedata , axis=0)
         """INEFFIECNT WAY
         dim = self.data.shape[1]
@@ -108,7 +113,17 @@ class LSH:
            for j in range(dim):
                temp.append(1-spatial.distance.cosine(data[:,i],data[:,j]))
            similarity.append(temp)"""
-        return sparsenorm.T * sparsenorm
+        result = sparsenorm.T * sparsenorm
+        f = open('sim_mat.pickle', 'wb')
+        pickle.dump(result, f)
+        f.close()
+        return result
+    
+    def loadSimMat(self):
+        f = open('sim_mat.pickle', 'rb')
+        result = pickle.load(f)
+        f.close()
+        return result
 
     def getAverage(self):
         dim = self.data.shape[1]
@@ -161,7 +176,7 @@ orig_data = df_rating_matrix.values
 df_rating_matrix = df_rating_matrix.sub(df_rating_matrix.mean(axis=1), axis=0)
 data = df_rating_matrix.values
 
-model = LSH(data, orig_data)
+model = LSH(data, orig_data, True)
 print(data)
 print(data[0][0])
 print(data.shape)
