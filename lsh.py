@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 import os.path
 from scipy import spatial
-
+import sklearn.preprocessing as pp
+from scipy import sparse
 
 
 class LSH:
@@ -14,7 +15,11 @@ class LSH:
         self.buckets = None
         self.vectors = None
         self.num_vector = None
+        self.sparsedata = None
         self.div_num = 1
+        self.sim_mat = self.getSimilarity()
+        print("similirez")
+        self.aver_mov = self.getAverage()
 
     def gen_orthagonal(self, k):
         x = np.random.rand(len(k))
@@ -91,7 +96,48 @@ class LSH:
             return 0
         else:
             return sum_total/sim_total
-        
+    def getSimilarity(self):
+        similarity = []
+        self.sparsedata = sparse.csc_matrix(data.astype(np.dtype('double')))
+        sparsenorm = pp.normalize( self.sparsedata , axis=0)
+        """INEFFIECNT WAY
+        dim = self.data.shape[1]
+        for i in range(dim):
+           temp = []
+           print(i)
+           for j in range(dim):
+               temp.append(1-spatial.distance.cosine(data[:,i],data[:,j]))
+           similarity.append(temp)"""
+        return sparsenorm.T * sparsenorm
+
+    def getAverage(self):
+        dim = self.data.shape[1]
+        sum= np.zeros( dim)
+        rated= np.zeros( dim)
+        for user in orig_data:
+            for i in range(dim):
+                if user[i] is not 0:
+                    sum[i] += user[i]
+                    rated[i] += 1
+        average = np.zeros( dim)
+        for i in range(dim):
+            if rated[i] is not 0:
+                average[i] = sum[i] / rated[i]
+        return average
+
+    def getPrediction( self, userId, movieId):
+        dim = self.data.shape[1]
+        Rk = self.aver_mov[movieId]
+        total = 0
+        w_total = 0
+        row = self.sparsedata.getrow(userId)
+        col = self.sim_mat.getcol(movieId)
+        for j in col.nonzero()[1]:
+            print(total)
+            print(w_total)
+            total += col[0,j]
+            w_total += col[0,j]*(self.orig_data[userId,j]-self.aver_mov[j])
+        return Rk + w_total/total
 
 # configure file path
 data_path = 'ml-latest-small'
@@ -134,4 +180,6 @@ count = 0
 print("Count:", count)
 
 print("Original Rating: ", orig_data[0][2])
-print(model.predict_rating(0,2))
+#print(model.predict_rating(0,2))
+print(model.getPrediction(0,2))
+
