@@ -42,7 +42,7 @@ class User:
         
         # do the encryption for all items
         result = []
-        for j in range(m):
+        for j in range(num_item):
             result.append(self.average_round1(j))
         return result
     
@@ -57,4 +57,16 @@ class User:
             flag = 0
             enc_rating = elgEncrypt(self.encryptObj, pow(self.g, flag, self.p), k1)
             enc_flag = elgEncrypt(self.encryptObj, pow(self.g, flag, self.p), k1)
-        return (enc_rating, enc_flag) # corresponds to M_i = (E(g^r), E(g^f))
+        return (enc_rating, enc_flag) # corresponds to M_i^(1) = (E(g^r), E(g^f))
+
+    def average_round2(self, ratings_A, flags_A):
+        num_item = len(ratings_A)
+
+        round2_m = []
+        for i in range(num_item):
+            decrypted_rating = pow(ratings_A[i], self.privElgamalKey, self.p)
+            decrypted_flag = pow(flags_A[i], self.privElgamalKey, self.p)
+            round2_m[i] = (decrypted_rating, decrypted_flag)
+
+        return round2_m # Corresponds to M_i^(3) = (A_1^x, A_2^x)
+    

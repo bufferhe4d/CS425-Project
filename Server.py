@@ -12,6 +12,7 @@ class Server:
         self.m = m
         self.simMat = None
         self.user_list = []
+        self.avg_ratings = None
     
     def addUser(self, user_to_add):
         self.user_list.append(user_to_add)
@@ -35,6 +36,14 @@ class Server:
         res_b = c1[1]*c2[1] % p
 
         return (res_a, res_b)
+    
+    def boundedDiscreteLog(pt):
+        h = 0
+        while h < self.p - 1:
+            if(pow(self.g, h, p) == pt):
+                return h
+            h += 1
+        return None
     
     def multiplyRatings(round1_m):
         sum_of_ratings = []
@@ -71,6 +80,41 @@ class Server:
             ratings_A.append(sum_of_ratings[0])
         for sum in sum_of_flags:
             flags_A.append(sum_of_flags[0])
-            
-            
+        # Round 1 Done
+
+        # Round 2   
+        round2_m = []
+        for i in range(n):
+            round2_m.append(self.user_list[i].average_round2(ratings_A, flags_A))
         
+        sum_plain_ratings = []
+        sum_plain_flags = []
+
+        for i in range(self.m):
+            sum_plain_flags.append(0)
+            sum_plain_ratings.append(0)
+        
+        for i in range(self.m):
+            base = 1
+            for j in range(n):
+                base = base * round2_m[j][i][0] % self.p # multiply all A_1 s
+            sum_plain_ratings[i] = (sum_of_ratings[i][1]*inverse(base, self.p)) % self.p # Divide by B_1
+            sum_plain_ratings[i] = boundedDiscreteLog(sum_plain_ratings[i])
+            base = 1
+            for j in range(n):
+                base = base * round2_m[j][i][1] % self.p # multiply all A_2 s
+            sum_plain_flags[i] = (sum_of_flags[i][1]*inverse(base, self.p)) % self.p # Divide by B_2
+            sum_plain_flags[i] = boundedDiscreteLog(sum_plain_flags[i])
+        
+        average_result = []
+
+        for i in range(self.m):
+            inter_result = 0
+            if(sum_plain_flags[i] == 0):
+                inter_result = sum_plain_flags[i]*1.0
+            else:
+                inter_result = sum_plain_ratings[i]*1.0/sum_plain_flags[i] # calculate the actual average
+            
+            average_result.append(inter_result) 
+
+        self.avg_ratings = average_result # list of m averages
