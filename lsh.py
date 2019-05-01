@@ -18,7 +18,7 @@ class LSH:
         self.num_vector = None
         self.sparsedata = None
         self.div_num = 1
-        self.sparsedata = sparse.csc_matrix(data.astype(np.dtype('double')))
+        self.sparsedata = sparse.csc_matrix(orig_data)
         if not sim_mat_load:
             self.sim_mat = self.getSimilarity()
         else:
@@ -51,7 +51,7 @@ class LSH:
             random_vectors.append(  np.random.randn(int(dim/self.div_num), num_vector) ) """
         random_vectors.append(self.gen_rand_vecs(num_vector))
         print(len(random_vectors[0]))
-        
+
         bin_to_decimal = 1 << np.arange(num_vector - 1, -1, -1)
 
         table =[]
@@ -95,15 +95,15 @@ class LSH:
             if orig_data[similars[i]][movieId] != 0 and userId != similars[i]:
                 sum_total += cur_sim*orig_data[similars[i]][movieId]
                 sim_total += cur_sim
-            
-        
+
+
         if sim_total == 0:
             return 0
         else:
             return sum_total/sim_total
     def getSimilarity(self):
         similarity = []
-        
+
         sparsenorm = pp.normalize( self.sparsedata , axis=0)
         """INEFFIECNT WAY
         dim = self.data.shape[1]
@@ -118,7 +118,7 @@ class LSH:
         pickle.dump(result, f)
         f.close()
         return result
-    
+
     def loadSimMat(self):
         f = open('sim_mat.pickle', 'rb')
         result = pickle.load(f)
@@ -147,18 +147,14 @@ class LSH:
         w_total = 0
         row = self.sparsedata.getrow(userId)
         col = self.sim_mat.getcol(movieId)
-        #print(col)
-        print(col.nonzero()[0])
-        print(self.orig_data[userId].nonzero())
-        for j in self.orig_data[userId].nonzero()[0]:
-            print(j)
-            #print(total)
-            #print(w_total)
-            print(col[0,j])
-            #print(self.orig_data[userId,j])
-            total += col[j,0]
-            w_total += col[j,0]*(self.orig_data[userId,j]-self.aver_mov[j])
-        print(total)
+        print(len(row.nonzero()[1]))
+        cnt = 0
+        for j in row.nonzero()[1]:
+            if j != movieId:
+                total += col[j,0]
+                w_total += col[j,0]*(self.orig_data[userId,j]-self.aver_mov[j])
+        if total is 0:
+            return 0
         return Rk + w_total/total
 
 # configure file path
@@ -174,7 +170,7 @@ df_movies = pd.read_csv(
 df_ratings = pd.read_csv(
     os.path.join(data_path, ratings_filename),
     usecols=['userId', 'movieId', 'rating'],
-    dtype={'userId': 'int32', 'movieId': 'int32', 'rating': 'float32'})
+    dtype={'userId': 'int32', 'movieId': 'int32', 'rating': 'double'})
 
 print(df_ratings.head(5))
 
@@ -183,7 +179,7 @@ orig_data = df_rating_matrix.values
 df_rating_matrix = df_rating_matrix.sub(df_rating_matrix.mean(axis=1), axis=0)
 data = df_rating_matrix.values
 
-model = LSH(data, orig_data, True)
+model = LSH(data, orig_data)
 print(data)
 print(data[0][0])
 print(data.shape)
@@ -203,5 +199,9 @@ print("Count:", count)
 
 print("Original Rating: ", orig_data[3][384])
 #print(model.predict_rating(0,2))
-print(model.getPrediction(3,384))
-
+print(model.getPrediction(0,2))
+print("Original Rating: ", orig_data[3][31])
+print(model.getPrediction(3,31))
+print("Original Rating: ", orig_data[2][2])
+print(model.getPrediction(2,2))
+print(model.getPrediction(1,50))
