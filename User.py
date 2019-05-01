@@ -9,7 +9,7 @@ import random as rnd
 class User:
     def __init__(self, id):
         self.id = id
-        self.avg_round1_m = None
+        self.avg_round1 = None
         self.sim_round1 = None
         self.ratings = {}
         self.p = None
@@ -35,26 +35,3 @@ class User:
         elgamal_tuple = (self.p, self.g, Y)
         # consturct elgamal object from the server public key
         self.encryptObj = ElGamal.consturct(elgamal_tuple)
-
-    def average_round1_all(self, num_item):
-        if self.avg_round1_m != None:
-            return self.avg_round1_m
-        
-        # do the encryption for all items
-        result = []
-        for j in range(m):
-            result.append(self.average_round1(j))
-        return result
-    
-    def average_round1(self, r):
-        k1 = number.getRandomRange(2, self.p - 1, Random.new().read)
-        k2 = number.getRandomRange(2, self.p - 1, Random.new().read)
-        if r in self.ratings:
-            flag = 1
-            enc_rating = elgEncrypt(self.encryptObj, pow(self.g, self.ratings[r], self.p), k1)
-            enc_flag = elgEncrypt(self.encryptObj, pow(self.g, flag, self.p), k1)
-        else:
-            flag = 0
-            enc_rating = elgEncrypt(self.encryptObj, pow(self.g, flag, self.p), k1)
-            enc_flag = elgEncrypt(self.encryptObj, pow(self.g, flag, self.p), k1)
-        return (enc_rating, enc_flag) # corresponds to M_i = (E(g^r), E(g^f))

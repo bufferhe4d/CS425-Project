@@ -147,18 +147,11 @@ class LSH:
         w_total = 0
         row = self.sparsedata.getrow(userId)
         col = self.sim_mat.getcol(movieId)
-        #print(col)
-        print(col.nonzero()[0])
-        print(self.orig_data[userId].nonzero())
-        for j in self.orig_data[userId].nonzero()[0]:
-            print(j)
-            #print(total)
-            #print(w_total)
-            print(col[0,j])
-            #print(self.orig_data[userId,j])
-            total += col[j,0]
-            w_total += col[j,0]*(self.orig_data[userId,j]-self.aver_mov[j])
-        print(total)
+        for j in col.nonzero()[1]:
+            print(total)
+            print(w_total)
+            total += col[0,j]
+            w_total += col[0,j]*(self.orig_data[userId,j]-self.aver_mov[j])
         return Rk + w_total/total
 
 # configure file path
@@ -201,7 +194,7 @@ count = 0
 
 print("Count:", count)
 
-print("Original Rating: ", orig_data[3][384])
+print("Original Rating: ", orig_data[0][2])
 #print(model.predict_rating(0,2))
-print(model.getPrediction(3,384))
+print(model.getPrediction(0,2))
 
