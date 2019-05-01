@@ -18,7 +18,7 @@ class LSH:
         self.num_vector = None
         self.sparsedata = None
         self.div_num = 1
-        self.sparsedata = sparse.csc_matrix(data.astype(np.dtype('double')))
+        self.sparsedata = sparse.csc_matrix(orig_data)
         if not sim_mat_load:
             self.sim_mat = self.getSimilarity()
         else:
@@ -147,11 +147,14 @@ class LSH:
         w_total = 0
         row = self.sparsedata.getrow(userId)
         col = self.sim_mat.getcol(movieId)
-        for j in col.nonzero()[1]:
-            print(total)
-            print(w_total)
-            total += col[0,j]
-            w_total += col[0,j]*(self.orig_data[userId,j]-self.aver_mov[j])
+        print(len(row.nonzero()[1]))
+        cnt = 0
+        for j in row.nonzero()[1]:
+            if j != movieId:
+                total += col[j,0]
+                w_total += col[j,0]*(self.orig_data[userId,j]-self.aver_mov[j])
+        if total is 0:
+            return 0
         return Rk + w_total/total
 
 # configure file path
@@ -167,7 +170,7 @@ df_movies = pd.read_csv(
 df_ratings = pd.read_csv(
     os.path.join(data_path, ratings_filename),
     usecols=['userId', 'movieId', 'rating'],
-    dtype={'userId': 'int32', 'movieId': 'int32', 'rating': 'float32'})
+    dtype={'userId': 'int32', 'movieId': 'int32', 'rating': 'double'})
 
 print(df_ratings.head(5))
 
@@ -176,7 +179,7 @@ orig_data = df_rating_matrix.values
 df_rating_matrix = df_rating_matrix.sub(df_rating_matrix.mean(axis=1), axis=0)
 data = df_rating_matrix.values
 
-model = LSH(data, orig_data, True)
+model = LSH(data, orig_data)
 print(data)
 print(data[0][0])
 print(data.shape)
@@ -197,4 +200,9 @@ print("Count:", count)
 print("Original Rating: ", orig_data[0][2])
 #print(model.predict_rating(0,2))
 print(model.getPrediction(0,2))
+print("Original Rating: ", orig_data[3][31])
+print(model.getPrediction(3,31))
+print("Original Rating: ", orig_data[2][2])
+print(model.getPrediction(2,2))
+print(model.getPrediction(1,50))
 
