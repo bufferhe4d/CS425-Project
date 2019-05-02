@@ -118,3 +118,41 @@ class Server:
             average_result.append(inter_result) 
 
         self.avg_ratings = average_result # list of m averages
+
+    def multiplySimilarityRatings(self, sim_round1_m):
+        pairwise_mults = []
+        for i in range(self.m):
+            temp_pair = []
+            for j in range(self.m):
+                temp_pair.append((1,1))
+            pairwise_mults.append(temp_pair)
+        
+        for i in range(self.m):
+            for j in range(self.m):
+                temp_pair = (1,1)
+                for k in range(len(sim_round1_m)):
+                    rating_product = sim_round1_m[k][i][j]
+                    temp_pair = addElgamal(temp_pair, rating_product, self.p)
+                pairwise_mults[i][j] = temp_pair
+        
+        pairwise_m = []
+        # unnecessary
+        for i in range(self.m):
+            for j in range(self.m):
+                pairwise_m.append(0)
+        
+        # merge this above
+        for i in range(self.m):
+            for j in range(self.m):
+                pairwise_m[i][j] = pairwise_mults[i][j][0]
+        return pairwise_m, pairwise_mults # Corresponds to A,B in step 2
+
+    def calculateSimMat(self):
+        self.genElgamalKeys()
+        n = len(self.user_list)
+        sim_round1_m = []
+        for i in range(n):
+            sim_round1_m.append(self.user_list[i].sim_round1_all(self.m)
+
+        pairwise_m, pairwise_mults = multiplySimilarityRatings(sim_round1_m)
+        # TODO
