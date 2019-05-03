@@ -1,6 +1,7 @@
 import pickle
 import numpy as np
 import pandas
+from pandas import DataFrame
 
 
 class DataParser:
@@ -14,11 +15,14 @@ class DataParser:
         self.ratings_pickle_name = "ratings.pkl"
         self.tags_path = "../ml-latest-small/tags.csv"
         self.tags_pickle_name = "tags.pkl"
+        self.staff_path = "../ml-latest-small/staff.tsv"
+        self.staff_pickle_name = "staff.pkl"
 
         self.links = np.array([])
         self.movies = np.array([])
         self.ratings = np.array([])
         self.tags = np.array([])
+        self.staff = np.array([])
 
     def dump_pickle(self, data, filename):
         pickle_out = open(filename, "wb")
@@ -35,13 +39,20 @@ class DataParser:
             self.movies = np.array(self.load_from_pickle(self.movies_pickle_name))
             self.ratings = np.array(self.load_from_pickle(self.ratings_pickle_name))
             self.tags = np.array(self.load_from_pickle(self.tags_pickle_name))
+            self.staff = np.array(self.load_from_pickle(self.staff_pickle_name))
         except (OSError, IOError) as e:
-            self.links = pandas.read_csv(self.links_path).as_matrix()
-            self.movies = pandas.read_csv(self.movies_path).as_matrix()
-            self.ratings = pandas.read_csv(self.ratings_path).as_matrix()
-            self.tags = pandas.read_csv(self.tags_path).as_matrix()
+            self.links = pandas.read_csv(self.links_path, dtype="str").as_matrix()
+            self.movies = pandas.read_csv(self.movies_path, dtype="str").as_matrix()
+            self.ratings = pandas.read_csv(self.ratings_path, dtype="str").as_matrix()
+            self.tags = pandas.read_csv(self.tags_path, dtype="str").as_matrix()
+            raw_staff = pandas.read_csv(self.staff_path, sep="\t", usecols=["tconst", "nconst", "category"], dtype="str").as_matrix()
+
+            # remove entries that are not in our dataset
+            df = DataFrame(raw_staff)
+            self.staff = np.array(df.loc[df[0].isin("tt" + self.links[:, 1])])
 
             self.dump_pickle(self.links, self.links_pickle_name)
             self.dump_pickle(self.movies, self.movies_pickle_name)
             self.dump_pickle(self.ratings, self.ratings_pickle_name)
             self.dump_pickle(self.tags, self.tags_pickle_name)
+            self.dump_pickle(self.staff, self.staff_pickle_name)
