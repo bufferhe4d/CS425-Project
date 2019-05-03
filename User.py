@@ -70,3 +70,26 @@ class User:
 
         return round2_m # Corresponds to M_i^(3) = (A_1^x, A_2^x)
     
+    def sim_round1_all(self, num_item):
+        # send each similarity pair as a list
+        all_pairs = []
+        for i in range(num_item):
+            sim_pair = []
+            for j in range(num_item):
+                sim_pair.append(self.sim_round1(i,j))
+            all_pairs.append(sim_pair)
+        
+        return all_pairs
+
+    def sim_round1(self, i, j):
+        k = number.getRandomRange(2, self.p - 1, Random.new().read)
+        if (i in self.ratings) and (j in self.ratings):
+            # multiply two ratings
+            mult_rating = elgEncrypt(self.encryptObj, pow(self.g, self.ratings[i]*self.ratings[j], self.p), k)
+        else:
+            # send 0
+            mult_rating = elgEncrypt(self.encryptObj, pow(self.g, 0, self.p), k)
+        
+        return mult_rating
+
+    
