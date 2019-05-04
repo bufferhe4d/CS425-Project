@@ -19,7 +19,7 @@ class Server:
         self.user_list.append(user_to_add)
     
     def genElgamalKeys(self):
-        self.p = 1000003#100379 # prime with generator 2
+        self.p = 100379 # prime with generator 2
         self.g = 2 # generator of p
 
         Y = 1 # multiplication of all public keys
