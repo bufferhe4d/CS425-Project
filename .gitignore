@@ -2,3 +2,4 @@ CS425_Dataset
 sim_mat.pickle
 **/*.pkl
 .idea/**
+test.py

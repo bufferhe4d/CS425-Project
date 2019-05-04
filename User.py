@@ -6,11 +6,15 @@ from Cryptodome.Util.number import inverse
 from Cryptodome.Util import number
 import random as rnd
 
+def elgEncrypt(encryptInfo, m, K):
+        c1 = int(pow(encryptInfo.g,K,encryptInfo.p))
+        c2 = m*int(pow(encryptInfo.y,K,encryptInfo.p )) % int(encryptInfo.p)
+        return (c1, c2)
 class User:
     def __init__(self, id):
         self.id = id
         self.avg_round1_m = None
-        self.sim_round1 = None
+        #self.sim_round1 = None
         self.ratings = {}
         self.p = None
         self.g = None
@@ -34,7 +38,7 @@ class User:
     def setServerPubKey(self, Y):
         elgamal_tuple = (self.p, self.g, Y)
         # consturct elgamal object from the server public key
-        self.encryptObj = ElGamal.consturct(elgamal_tuple)
+        self.encryptObj = ElGamal.construct(elgamal_tuple)
 
     def average_round1_all(self, num_item):
         if self.avg_round1_m != None:
@@ -52,11 +56,11 @@ class User:
         if r in self.ratings:
             flag = 1
             enc_rating = elgEncrypt(self.encryptObj, pow(self.g, self.ratings[r], self.p), k1)
-            enc_flag = elgEncrypt(self.encryptObj, pow(self.g, flag, self.p), k1)
+            enc_flag = elgEncrypt(self.encryptObj, pow(self.g, flag, self.p), k2)
         else:
             flag = 0
             enc_rating = elgEncrypt(self.encryptObj, pow(self.g, flag, self.p), k1)
-            enc_flag = elgEncrypt(self.encryptObj, pow(self.g, flag, self.p), k1)
+            enc_flag = elgEncrypt(self.encryptObj, pow(self.g, flag, self.p), k2)
         return (enc_rating, enc_flag) # corresponds to M_i^(1) = (E(g^r), E(g^f))
 
     def average_round2(self, ratings_A, flags_A):
@@ -66,7 +70,7 @@ class User:
         for i in range(num_item):
             decrypted_rating = pow(ratings_A[i], self.privElgamalKey, self.p)
             decrypted_flag = pow(flags_A[i], self.privElgamalKey, self.p)
-            round2_m[i] = (decrypted_rating, decrypted_flag)
+            round2_m.append((decrypted_rating, decrypted_flag))
 
         return round2_m # Corresponds to M_i^(3) = (A_1^x, A_2^x)
     
@@ -91,5 +95,17 @@ class User:
             mult_rating = elgEncrypt(self.encryptObj, pow(self.g, 0, self.p), k)
         
         return mult_rating
+    
+    def sim_round2(self, pairwise_m):
+        num_item = len(pairwise_m)
+
+        round2_m = []
+        for i in range(num_item):
+            temp_row = []
+            for j in range(num_item):
+                inter_result = pow(pairwise_m[i][j], self.privElgamalKey, self.p)
+                temp_row.append(inter_result)
+            round2_m.append(temp_row)
+        return round2_m
 
     
