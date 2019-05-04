@@ -19,7 +19,7 @@ class Server:
         self.user_list.append(user_to_add)
     
     def genElgamalKeys(self):
-        self.p = 100379 # prime with generator 2
+        self.p = number.getPrime(128) # prime with generator 2
         self.g = 2 # generator of p
 
         Y = 1 # multiplication of all public keys
@@ -116,8 +116,8 @@ class Server:
                 inter_result = sum_plain_flags[i]*1.0
             else:
                 inter_result = sum_plain_ratings[i]*1.0/sum_plain_flags[i] # calculate the actual average
-            print("Rating i", sum_plain_ratings[i])
-            print("flags i", sum_plain_flags[i])
+            #print("Rating i", sum_plain_ratings[i])
+            #print("flags i", sum_plain_flags[i])
             average_result.append(inter_result) 
 
         self.avg_ratings = average_result # list of m averages
@@ -171,7 +171,7 @@ class Server:
 
         for i in range(n):
             round2_m.append(self.user_list[i].sim_round2(pairwise_m))
-        print(round2_m)
+        #print(round2_m)
         decrypt_pairwise_m = []
         decrypt_denom = []
 
@@ -197,8 +197,47 @@ class Server:
         for i in range(self.m):
             sim_vector = []
             for j in range(self.m):
-                sim_vector.append(self.getSim(decrypt_pairwise_m[i][j], decrypt_denom[i], decrypt_denom[j]))
+                sim_vector.append(int(self.getSim(decrypt_pairwise_m[i][j], decrypt_denom[i], decrypt_denom[j])*100))
             result_matrix.append(sim_vector)
         
-        print(result_matrix)
+        #print(result_matrix)
         self.simMat = result_matrix
+
+    def inv_pair(self, ct):
+        return (inverse(ct[0], self.p), inverse(ct[1], self.p))
+    def predict_rating(self, i, k):
+        # predict rating of user i, item k denoted P_i,k
+        enc_obj = ElGamal.construct((self.p, self.g, self.user_list[i].getPubKey()))
+        
+        encrypted_ratings = self.user_list[i].sendRatings(self.m)
+        sum_of_sims = 0
+        for j in range(self.m):
+            if k != j:
+                sum_of_sims += self.simMat[k][j]
+        R_k = self.avg_ratings[k]*100
+        
+        #print(R_k)
+        #print(sum_of_sims)
+        #print(R_k*sum_of_sims)
+        a = number.getRandomRange(2, self.p - 1, Random.new().read)
+        first_term = elgEncrypt(enc_obj, pow(self.g, int(R_k*sum_of_sims), self.p), a)
+
+        result = (1,1)
+        result = self.addElgamal(result, first_term, self.p)
+        for j in range(self.m):
+            if k != j:
+                a = number.getRandomRange(2, self.p - 1, Random.new().read)
+                R_j = self.avg_ratings[j]*100
+                denom = elgEncrypt(enc_obj, pow(self.g, int(R_j), self.p), a)
+                denom_inv = self.inv_pair(denom)
+                inter_result = self.addElgamal(encrypted_ratings[j], denom_inv, self.p)
+                inter_result = (inter_result[0]**self.simMat[k][j], inter_result[1]**self.simMat[k][j])
+                result = self.addElgamal(result, inter_result, self.p)
+
+        a = number.getRandomRange(2, self.p - 1, Random.new().read)
+        encrypted_denom = elgEncrypt(enc_obj, pow(self.g, sum_of_sims, self.p), a)
+        
+        # send results to user obtain rating
+        predicted_rating = self.user_list[i].calculate_prediction(result, encrypted_denom)
+        print("Rating: ", predicted_rating/100)
+            

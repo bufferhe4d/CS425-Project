@@ -22,6 +22,14 @@ class User:
         self.pubElgamalKey = None
         self.encryptObj = None
     
+    def boundedDiscreteLog(self, pt):
+        h = 0
+        while h < self.p - 1:
+            if(pow(self.g, h, self.p) == pt):
+                return h
+            h += 1
+        return None
+
     def setRating(self,ratings):
         self.ratings = ratings
     
@@ -108,4 +116,25 @@ class User:
             round2_m.append(temp_row)
         return round2_m
 
-    
+    def sendRatings(self, num_item):
+        enc_obj = ElGamal.construct((self.p, self.g, self.pubElgamalKey))
+        encrypted_ratings = {}
+        for i in range(num_item):
+            k = number.getRandomRange(2, self.p - 1, Random.new().read)
+            if i in self.ratings:
+                encrypted_ratings[i] = elgEncrypt(enc_obj, pow(self.g, self.ratings[i]*100, self.p), k)
+            else:
+                encrypted_ratings[i] = elgEncrypt(enc_obj, pow(self.g, 0, self.p), k)
+        
+        return encrypted_ratings
+
+    def calculate_prediction(self, encrypted_nom, encrypted_denom):
+        plain_nom = encrypted_nom[1]*inverse(pow(encrypted_nom[0], self.privElgamalKey, self.p), self.p)
+        plain_denom = encrypted_denom[1]*inverse(pow(encrypted_denom[0], self.privElgamalKey, self.p), self.p)
+        
+        #print(self.boundedDiscreteLog(plain_nom % self.p))
+        #print(self.boundedDiscreteLog(plain_denom % self.p))
+
+        prediction = self.boundedDiscreteLog(plain_nom % self.p)/self.boundedDiscreteLog(plain_denom % self.p)
+        return prediction
+        #print(prediction/100)
