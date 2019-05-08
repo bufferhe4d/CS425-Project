@@ -41,11 +41,11 @@ class DataParser:
             self.tags = np.array(self.load_from_pickle(self.tags_pickle_name))
             self.staff = np.array(self.load_from_pickle(self.staff_pickle_name))
         except (OSError, IOError) as e:
-            self.links = pandas.read_csv(self.links_path, dtype="str").as_matrix()
-            self.movies = pandas.read_csv(self.movies_path, dtype="str").as_matrix()
-            self.ratings = pandas.read_csv(self.ratings_path, dtype="str").as_matrix()
-            self.tags = pandas.read_csv(self.tags_path, dtype="str").as_matrix()
-            raw_staff = pandas.read_csv(self.staff_path, sep="\t", usecols=["tconst", "nconst", "category"], dtype="str").as_matrix()
+            self.links = pandas.read_csv(self.links_path, dtype="str").values
+            self.movies = pandas.read_csv(self.movies_path, dtype="str").values
+            self.ratings = pandas.read_csv(self.ratings_path, dtype="str").values
+            self.tags = pandas.read_csv(self.tags_path, dtype="str").values
+            raw_staff = pandas.read_csv(self.staff_path, sep="\t", usecols=["tconst", "nconst", "category"], dtype="str").values
 
             # remove entries that are not in our dataset
             df = DataFrame(raw_staff)
