@@ -4,7 +4,14 @@ from Cryptodome.PublicKey import ElGamal
 from Cryptodome.Util.number import GCD
 from Cryptodome.Util.number import inverse
 from Cryptodome.Util import number
+""" from Crypto import Random
+from Crypto.Random import random
+from Crypto.PublicKey import ElGamal
+from Crypto.Util.number import GCD
+from Crypto.Util.number import inverse
+from Crypto.Util import number """
 import random as rnd
+import pickle
 
 def elgEncrypt(encryptInfo, m, K):
         c1 = int(pow(encryptInfo.g,K,encryptInfo.p))
@@ -25,6 +32,7 @@ class User:
     def boundedDiscreteLog(self, pt):
         h = 0
         while h < self.p - 1:
+            #print("HEre: ", h)
             if(pow(self.g, h, self.p) == pt):
                 return h
             h += 1
@@ -82,22 +90,35 @@ class User:
 
         return round2_m # Corresponds to M_i^(3) = (A_1^x, A_2^x)
     
-    def sim_round1_all(self, num_item):
+    def sim_round1_all(self, num_item, avg_ratings):
         # send each similarity pair as a list
         all_pairs = []
+        progress = 0
         for i in range(num_item):
             sim_pair = []
             for j in range(num_item):
-                sim_pair.append(self.sim_round1(i,j))
+                sim_pair.append(self.sim_round1(i,j, avg_ratings))
+                #print("i: ", i, " j: ", j, "Done!")
+                #progress+=1
+            #print("Round1 Progress: %", 100*float(progress)/(num_item**2))
             all_pairs.append(sim_pair)
         
         return all_pairs
 
-    def sim_round1(self, i, j):
+    def sim_round1(self, i, j, avg_ratings):
         k = number.getRandomRange(2, self.p - 1, Random.new().read)
         if (i in self.ratings) and (j in self.ratings):
             # multiply two ratings
-            mult_rating = elgEncrypt(self.encryptObj, pow(self.g, self.ratings[i]*self.ratings[j], self.p), k)
+            #print(self.ratings[i]*self.ratings[j])
+            """  term1 = pow(self.g, int(self.ratings[i]*self.ratings[j]*10), self.p)
+            term2 = pow(self.g, int(avg_ratings[i]*avg_ratings[j]*10), self.p)
+            div1 = pow(self.g, int(self.ratings[i]*avg_ratings[j]*10), self.p)
+            div2 = pow(self.g, int(avg_ratings[i]*self.ratings[j]*10), self.p)
+            div1 = inverse(div1, self.p)
+            div2 = inverse(div2, self.p)
+            #pearson coeff test
+            mult_rating = elgEncrypt(self.encryptObj, pow(self.g, term1*term2*div1*div2, self.p), k) """
+            mult_rating = elgEncrypt(self.encryptObj, pow(self.g, (self.ratings[i])*(self.ratings[j]), self.p), k)
         else:
             # send 0
             mult_rating = elgEncrypt(self.encryptObj, pow(self.g, 0, self.p), k)
@@ -106,13 +127,15 @@ class User:
     
     def sim_round2(self, pairwise_m):
         num_item = len(pairwise_m)
-
+        progress = 0
         round2_m = []
         for i in range(num_item):
             temp_row = []
             for j in range(num_item):
                 inter_result = pow(pairwise_m[i][j], self.privElgamalKey, self.p)
                 temp_row.append(inter_result)
+                #progress +=1
+            #print("Round2 Progress: %", 100*float(progress)/(num_item**2))
             round2_m.append(temp_row)
         return round2_m
 
@@ -124,9 +147,22 @@ class User:
             if i in self.ratings:
                 encrypted_ratings[i] = elgEncrypt(enc_obj, pow(self.g, self.ratings[i]*100, self.p), k)
             else:
-                encrypted_ratings[i] = elgEncrypt(enc_obj, pow(self.g, 0, self.p), k)
+                temp = 1
+                sum_rat = 0
+                rat_cnt = 0
+                for r in self.ratings:
+                    sum_rat += self.ratings[r]
+                    rat_cnt += 1
+                if rat_cnt == 0:
+                    user_avg = 0
+                else:
+                    user_avg = sum_rat/rat_cnt
+                encrypted_ratings[i] = elgEncrypt(enc_obj, pow(self.g, int(user_avg*100), self.p), k)
         
         return encrypted_ratings
+
+    def sendPlainRatings(self):
+        return self.ratings
 
     def calculate_prediction(self, encrypted_nom, encrypted_denom):
         plain_nom = encrypted_nom[1]*inverse(pow(encrypted_nom[0], self.privElgamalKey, self.p), self.p)
@@ -134,7 +170,13 @@ class User:
         
         #print(self.boundedDiscreteLog(plain_nom % self.p))
         #print(self.boundedDiscreteLog(plain_denom % self.p))
-
-        prediction = self.boundedDiscreteLog(plain_nom % self.p)/self.boundedDiscreteLog(plain_denom % self.p)
+        nom = self.boundedDiscreteLog(plain_nom % self.p)
+        denom = self.boundedDiscreteLog(plain_denom % self.p)
+        print("Nom", nom)
+        print("Denom", denom)
+        if denom == 0:
+            prediction = 0
+        else:
+            prediction = nom/denom
         return prediction
         #print(prediction/100)

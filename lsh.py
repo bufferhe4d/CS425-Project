@@ -13,6 +13,7 @@ class LSH:
     def __init__(self, data, orig_data, sim_mat_load = False):
         self.data = data
         self.orig_data = orig_data
+        self.m = len(orig_data[0])
         self.buckets = None
         self.vectors = None
         self.num_vector = None
@@ -23,6 +24,7 @@ class LSH:
             self.sim_mat = self.getSimilarity()
         else:
             self.sim_mat = self.loadSimMat()
+        print(self.sim_mat)
         print("similirez")
         self.aver_mov = self.getAverage()
 
@@ -39,7 +41,7 @@ class LSH:
 
         rand_vecs = []
         rand_vecs.append(k)
-        for i in range(9723):
+        for i in range(self.m - 1):
             rand_vecs.append(self.gen_orthagonal(k))
         return rand_vecs
 
@@ -126,7 +128,7 @@ class LSH:
         return result
 
     def getAverage(self):
-        dim = self.data.shape[1]
+        """ dim = self.data.shape[1]
         sum= np.zeros( dim)
         rated= np.zeros( dim)
         for user in orig_data:
@@ -138,7 +140,8 @@ class LSH:
         for i in range(dim):
             if rated[i] is not 0:
                 average[i] = sum[i] / rated[i]
-        return average
+        return average """
+        return np.true_divide(data.T.sum(1), (data.T!=0).sum(1))
 
     def getPrediction( self, userId, movieId):
         dim = self.data.shape[1]
@@ -150,11 +153,15 @@ class LSH:
         print(len(row.nonzero()[1]))
         cnt = 0
         for j in row.nonzero()[1]:
+            print("j:", j)
             if j != movieId:
                 total += col[j,0]
                 w_total += col[j,0]*(self.orig_data[userId,j]-self.aver_mov[j])
         if total is 0:
             return 0
+        print("Rk", Rk)
+        print("wtotal", w_total)
+        print("total", total)
         return Rk + w_total/total
 
 # configure file path
@@ -179,6 +186,12 @@ orig_data = df_rating_matrix.values
 df_rating_matrix = df_rating_matrix.sub(df_rating_matrix.mean(axis=1), axis=0)
 data = df_rating_matrix.values
 
+data = [[3,5,0,4],[0,1,5,0], [2,3,2,4]]
+data = np.array(data)
+orig_data = data
+
+print("Avg", np.true_divide(data.T.sum(1), (data.T!=0).sum(1)))
+
 model = LSH(data, orig_data)
 print(data)
 print(data[0][0])
@@ -197,11 +210,13 @@ count = 0
 
 print("Count:", count)
 
-print("Original Rating: ", orig_data[3][384])
+print("Original Rating: ", orig_data[0][0])
 #print(model.predict_rating(0,2))
+print(model.getPrediction(0,0))
+print("Original Rating: ", orig_data[0][1])
+print(model.getPrediction(0,1))
+print("Original Rating: ", orig_data[0][2])
 print(model.getPrediction(0,2))
-print("Original Rating: ", orig_data[3][31])
-print(model.getPrediction(3,31))
-print("Original Rating: ", orig_data[2][2])
-print(model.getPrediction(2,2))
-print(model.getPrediction(1,50))
+print("Original Rating: ", orig_data[0][3])
+print(model.getPrediction(0,3))
+#print(model.getPrediction(1,50))
