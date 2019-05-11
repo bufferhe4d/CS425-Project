@@ -1,4 +1,4 @@
-from Crypto.Util.number import getPrime, inverse, GCD, getRandomRange
+from Cryptodome.Util.number import getPrime, inverse, GCD, getRandomRange
 
 
 class Paillier:

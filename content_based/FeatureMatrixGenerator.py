@@ -1,7 +1,21 @@
 import numpy as np
-from DataParser import DataParser
-from Statistics import Statistics
 from pandas import DataFrame
+import pickle
+
+
+if_matrix_filename = "item_feature_matrix.pkl"
+mov_id_mat_filename = "mov_id_matrix.pkl"
+
+
+def dump_pickle(data, filename):
+    pickle_out = open(filename, "wb")
+    pickle.dump(data, pickle_out)
+    pickle_out.close()
+
+
+def load_from_pickle(filename):
+    pickle_in = open(filename, "rb")
+    return pickle.load(pickle_in)
 
 
 class FeatureMatrixGenerator:
@@ -11,6 +25,7 @@ class FeatureMatrixGenerator:
         self.top_tags = top_tags
         self.top_staff = top_staff
         self.item_feature_matrix = np.array([])
+        self.mov_id_matrix = np.array([])
         self.genres = ["Action", "Adventure", "Animation", "Children's", "Comedy", "Crime", "Documentary", "Drama",
                        "Fantasy", "Film-Noir", "Horror", "Musical", "Mystery", "Romance", "Sci-Fi", "Thriller", "War",
                        "Western"]
@@ -23,47 +38,55 @@ class FeatureMatrixGenerator:
         self.add_tag_cols()
 
     def shape_matrix(self):
-        # add 1 col representing the movie id
         # add 184 cols representing top-tags (asc. order) - not used for now
         # add 1 col representing the director
         # add 1 col representing the leading actor
         # 18 cols representing each genre in dataset
         # 9742 is the number of movies
-        self.item_feature_matrix = np.zeros((9742, 1519), dtype="int")
+        self.item_feature_matrix = np.zeros((9742, 1518), dtype="int")
+        self.mov_id_matrix = np.zeros((9742, ), dtype="int")
 
     def populate_matrix(self):
-        for i, movie in enumerate(self.raw_data.movies):
-            m_id = movie[0]
+        try:
+            self.item_feature_matrix = load_from_pickle(if_matrix_filename)
+            self.mov_id_matrix = load_from_pickle(mov_id_mat_filename)
+        except(IOError, OSError) as e:
 
-            # insert movie id
-            self.item_feature_matrix[i][0] = m_id
+            for i, movie in enumerate(self.raw_data.movies):
+                m_id = movie[0]
 
-            # populate tag cols
-            # m_tags = self.get_tags_by_movie(m_id)
-            # for tag in m_tags:
-            #     tag_idx = np.where(self.top_tags == tag)[0][0] + 1
-            #     self.item_feature_matrix[i][tag_idx] = 1
+                # insert movie id
+                self.mov_id_matrix[i] = m_id
 
-            # populate actor cols - top 1499 staff
-            m_actors = self.get_actors_by_movie(m_id)
-            for actor in m_actors:
-                actor_idx = [i[0] for i in self.top_staff].index(actor) + 1
-                self.item_feature_matrix[i][actor_idx] = 1
+                # populate tag cols
+                # m_tags = self.get_tags_by_movie(m_id)
+                # for tag in m_tags:
+                #     tag_idx = np.where(self.top_tags == tag)[0][0] + 1
+                #     self.item_feature_matrix[i][tag_idx] = 1
 
-            # populate director and actor cols - 1 dir, 1 actor approach
-            # director, actor = self.get_director_and_actor(m_id)
-            # self.item_feature_matrix[i][1] = director
-            # self.item_feature_matrix[i][2] = actor
+                # populate actor cols - top 1499 staff
+                m_actors = self.get_actors_by_movie(m_id)
+                for actor in m_actors:
+                    actor_idx = [i[0] for i in self.top_staff].index(actor)
+                    self.item_feature_matrix[i][actor_idx] = 1
 
-            # populate genres
-            m_genres = self.get_genres_by_movie_id(m_id)
-            for j, genre in enumerate(self.genres):
-                if genre in m_genres:
-                    self.item_feature_matrix[i][1500 + j] = 1
+                # populate director and actor cols - 1 dir, 1 actor approach
+                # director, actor = self.get_director_and_actor(m_id)
+                # self.item_feature_matrix[i][1] = director
+                # self.item_feature_matrix[i][2] = actor
 
-            print("movie " + str(i) + " done")
+                # populate genres
+                m_genres = self.get_genres_by_movie_id(m_id)
+                for j, genre in enumerate(self.genres):
+                    if genre in m_genres:
+                        self.item_feature_matrix[i][1499 + j] = 1
 
-        print("matrix generation done")
+                print("movie " + str(i) + " done")
+
+            dump_pickle(self.item_feature_matrix, if_matrix_filename)
+            dump_pickle(self.mov_id_matrix, mov_id_mat_filename)
+
+        print("matrix gen done")
 
     def get_genres_by_movie_id(self, m_id):
         df = DataFrame(self.raw_data.movies)
@@ -81,7 +104,6 @@ class FeatureMatrixGenerator:
         df = DataFrame(self.raw_data.staff)
         m_info = np.array(df.loc[df[0] == "tt" + imdb_id])
 
-        # ToDo: returning only 1 director and 1 actor, could be better?
         for info in m_info:
             if info[2] == "director":
                 director = info[1]
@@ -118,11 +140,3 @@ class FeatureMatrixGenerator:
                 res.append(tmp)
 
         return res
-
-
-if __name__ == '__main__':
-    data = DataParser()
-    data.parse_data()
-    stats = Statistics(data.tags, data.staff)
-    fgm = FeatureMatrixGenerator(data, stats.get_top_tags(), stats.get_top_staff())
-    fgm.populate_matrix()

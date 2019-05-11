@@ -3,12 +3,10 @@ from .paillier import Paillier
 
 class Bob:
     k = 5
-    maxsim = 2**k
+    maxsim = 2 ** k
 
-    def __init__(self, lsh, delta=0.1):
+    def __init__(self, lsh):
         self.lsh = lsh
-        self.delta = delta
-
 
     def recommend(self, ps, pub):
         c = Paillier(pub)
@@ -28,13 +26,16 @@ class Bob:
             I &= self.lsh.find_sim(i)
 
         vs = []
-        for i in range(len(I)):
+        for i in I:
             a = 0
-            for _, j in range(ps):
+            for _, j in ps:
                 s = int(self.lsh.sim(i, j) * self.maxsim)
                 if s < 1:
                     continue
                 a += s
+            if a == 0:
+                I.remove(i)
+                continue
             vs.append((a, i))
 
         lut = dict()

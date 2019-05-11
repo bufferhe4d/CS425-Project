@@ -43,7 +43,7 @@ class DataParser:
         except (OSError, IOError) as e:
             self.links = pandas.read_csv(self.links_path, dtype="str").values
             self.movies = pandas.read_csv(self.movies_path, dtype="str").values
-            self.ratings = pandas.read_csv(self.ratings_path, dtype="str").values
+            self.ratings = pandas.read_csv(self.ratings_path, dtype="str", usecols=["rating", "movieId"]).values
             self.tags = pandas.read_csv(self.tags_path, dtype="str").values
             raw_staff = pandas.read_csv(self.staff_path, sep="\t", usecols=["tconst", "nconst", "category"], dtype="str").values
 
@@ -51,8 +51,16 @@ class DataParser:
             df = DataFrame(raw_staff)
             self.staff = np.array(df.loc[df[0].isin("tt" + self.links[:, 1])])
 
+            df = DataFrame(self.ratings)
+            cols = list(df)
+            cols[1], cols[0] = cols[0], cols[1]
+            self.ratings = df.ix[:, cols].values
+
             self.dump_pickle(self.links, self.links_pickle_name)
             self.dump_pickle(self.movies, self.movies_pickle_name)
             self.dump_pickle(self.ratings, self.ratings_pickle_name)
             self.dump_pickle(self.tags, self.tags_pickle_name)
             self.dump_pickle(self.staff, self.staff_pickle_name)
+
+data = DataParser()
+data.parse_data()
