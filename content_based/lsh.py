@@ -8,6 +8,7 @@ class LSH:
         self.m = len(mm[0])
         self.r = r
         self.b = b
+        assert r * b == self.m
         self.k = 3 * self.n
         self.bs = [[set() for j in range(self.k)] for i in range(self.b)]
         self.I = set()

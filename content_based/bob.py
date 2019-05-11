@@ -31,7 +31,10 @@ class Bob:
         for i in range(len(I)):
             a = 0
             for _, j in range(ps):
-                a += self.sm[i][j]
+                s = int(self.lsh.sim(i, j) * self.maxsim)
+                if s < 1:
+                    continue
+                a += s
             vs.append((a, i))
 
         lut = dict()
