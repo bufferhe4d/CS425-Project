@@ -5,13 +5,15 @@ class Bob:
     k = 5
     maxsim = 2**k
 
-    def __init__(self, sm, delta=0.1):
-        self.sm = sm
+    def __init__(self, lsh, delta=0.1):
+        self.lsh = lsh
         self.delta = delta
+
 
     def recommend(self, ps, pub):
         c = Paillier(pub)
-        I = []
+        I = self.lsh.I
+        """
         # possibly make this faster
         for j in len(self.sm):
             satisfy = True
@@ -21,6 +23,9 @@ class Bob:
                     break
             if satisfy:
                 I.append(j)
+        """
+        for _, i in ps:
+            I &= self.lsh.find_sim(i)
 
         vs = []
         for i in range(len(I)):
@@ -42,7 +47,10 @@ class Bob:
         for i in I:
             w = 1
             for p, j in ps:
-                w *= lut[p][self.sm[i][j] - 1]
+                s = int(self.lsh.sim(i, j) * self.maxsim)
+                if s < 1:
+                    continue
+                w *= lut[p][s - 1]
                 w = w % c.n2
             ws.append((w, i))
 
