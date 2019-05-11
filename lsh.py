@@ -7,7 +7,7 @@ from scipy import spatial
 import sklearn.preprocessing as pp
 from scipy import sparse
 import pickle
-
+import time
 
 class LSH:
     def __init__(self, data, orig_data, sim_mat_load = False):
@@ -20,13 +20,19 @@ class LSH:
         self.sparsedata = None
         self.div_num = 1
         self.sparsedata = sparse.csc_matrix(orig_data)
+        begin = time.process_time()
         if not sim_mat_load:
             self.sim_mat = self.getSimilarity()
         else:
             self.sim_mat = self.loadSimMat()
-        print(self.sim_mat)
-        print("similirez")
+        end = time.process_time()
+        
+        print("simmat propro", end - begin )
+        #print("similirez")
+        begin = time.process_time()
         self.aver_mov = self.getAverage()
+        end = time.process_time()
+        print("aver propro", end - begin )
 
     def gen_orthagonal(self, k):
         x = np.random.rand(len(k))
@@ -52,7 +58,7 @@ class LSH:
         """ for i in range(self.div_num):
             random_vectors.append(  np.random.randn(int(dim/self.div_num), num_vector) ) """
         random_vectors.append(self.gen_rand_vecs(num_vector))
-        print(len(random_vectors[0]))
+        #print(len(random_vectors[0]))
 
         bin_to_decimal = 1 << np.arange(num_vector - 1, -1, -1)
 
@@ -90,9 +96,9 @@ class LSH:
         sim_total = 0
         sum_total = 0
         similars = self.query(userId)
-        print("Similar user count: ", len(similars))
+        #print("Similar user count: ", len(similars))
         for i in range(len(similars)):
-            print(orig_data[similars[i]][movieId])
+            #print(orig_data[similars[i]][movieId])
             cur_sim = 1 - spatial.distance.cosine(data[userId], data[similars[i]])
             if orig_data[similars[i]][movieId] != 0 and userId != similars[i]:
                 sum_total += cur_sim*orig_data[similars[i]][movieId]
@@ -133,15 +139,16 @@ class LSH:
         rated= np.zeros( dim)
         for user in orig_data:
             for i in range(dim):
-                if user[i] is not 0:
+                if user[i] != 0:
                     sum[i] += user[i]
                     rated[i] += 1
         average = np.zeros( dim)
         for i in range(dim):
-            if rated[i] is not 0:
+            if rated[i] != 0:
                 average[i] = sum[i] / rated[i]
+<<<<<<< Updated upstream
         return average """
-        return np.true_divide(data.T.sum(1), (data.T!=0).sum(1))
+        return np.true_divide(orig_data.T.sum(1), (orig_data.T!=0).sum(1))
 
     def getPrediction( self, userId, movieId):
         dim = self.data.shape[1]
@@ -149,20 +156,25 @@ class LSH:
         total = 0
         w_total = 0
         row = self.sparsedata.getrow(userId)
+        k = 1
+        #cow = sorted(range(len(row[1])), key=lambda i: row[1][i])[-1*k:] #best k
         col = self.sim_mat.getcol(movieId)
-        print(len(row.nonzero()[1]))
         cnt = 0
         for j in row.nonzero()[1]:
-            print("j:", j)
+ #           print("j:", j)
             if j != movieId:
                 total += col[j,0]
                 w_total += col[j,0]*(self.orig_data[userId,j]-self.aver_mov[j])
         if total is 0:
             return 0
-        print("Rk", Rk)
-        print("wtotal", w_total)
-        print("total", total)
+        #print("Rk", Rk)
+        #print("wtotal", w_total)
+        #print("total", total)
+        if Rk+ w_total/total > 5:
+            return 5
         return Rk + w_total/total
+
+
 
 # configure file path
 data_path = 'ml-latest-small'
@@ -179,24 +191,27 @@ df_ratings = pd.read_csv(
     usecols=['userId', 'movieId', 'rating'],
     dtype={'userId': 'int32', 'movieId': 'int32', 'rating': 'double'})
 
-print(df_ratings.head(5))
+#print(df_ratings.head(5))
 
 df_rating_matrix = df_ratings.pivot(index='userId', columns='movieId', values='rating').fillna(0)
 orig_data = df_rating_matrix.values
 df_rating_matrix = df_rating_matrix.sub(df_rating_matrix.mean(axis=1), axis=0)
 data = df_rating_matrix.values
 
-data = [[3,5,0,4],[0,1,5,0], [2,3,2,4]]
-data = np.array(data)
-orig_data = data
+item_count = 500
+data = data[:,:item_count]
+data = orig_data[:,:item_count]
 
-print("Avg", np.true_divide(data.T.sum(1), (data.T!=0).sum(1)))
+#data = [[3,5,0,4],[0,1,5,0], [2,3,2,4]]
+#data = np.array(data)
+#orig_data = data
 
+#print("Avg", np.true_divide(data.T.sum(1), (data.T!=0).sum(1)))
 model = LSH(data, orig_data)
-print(data)
-print(data[0][0])
-print(data.shape)
-model.train(5)
+#print(data)
+#print(data[0][0])
+#print(data.shape)
+#model.train(5)
 
 count = 0
 """ for i in model.buckets:
@@ -208,15 +223,49 @@ count = 0
         for value in i[j]:
             print( df_movies['title'][value] ) """
 
-print("Count:", count)
+#print("Count:", count)
 
-print("Original Rating: ", orig_data[0][0])
+#print("Original Rating: ", orig_data[0][0])
 #print(model.predict_rating(0,2))
-print(model.getPrediction(0,0))
-print("Original Rating: ", orig_data[0][1])
-print(model.getPrediction(0,1))
-print("Original Rating: ", orig_data[0][2])
-print(model.getPrediction(0,2))
-print("Original Rating: ", orig_data[0][3])
-print(model.getPrediction(0,3))
+#print(model.getPrediction(0,0))
+#print("Original Rating: ", orig_data[0][1])
+#print(model.getPrediction(0,1))
+#print("Original Rating: ", orig_data[0][2])
+#print(model.getPrediction(0,2))
+#print("Original Rating: ", orig_data[0][3])
+#print(model.getPrediction(0,3))
 #print(model.getPrediction(1,50))
+
+test_file = open("test_data500-3000-2.pickle", "rb")
+test_data = pickle.load(test_file)
+#pickle.dump(test_data, test_file)
+test_file.close()
+count = 0
+
+#print(data.shape)
+for index, rating in test_data.items():
+    data[index[0]][index[1]] = 0
+
+def rmse(predictions, targets):
+    return np.sqrt(((predictions - targets) ** 2).mean())
+
+ratings = np.array([])
+predictions = np.array([])
+cnt = 0
+
+begin = time.process_time()
+for index, rating in test_data.items():
+    #print("index:", index)
+    cnt+=1
+    predicted = model.getPrediction(int(index[0]), index[1])
+    ratings = np.append(ratings, rating)
+    predictions = np.append(predictions, predicted)
+    #print("preditced:", cnt, " prediction: ", predicted, " original: ", rating)
+    #if cnt == 5:
+        #print("Error:", rmse(predictions, ratings))
+     #   cnt = 0
+     
+end = time.process_time()
+print("simmat propro", (end - begin)/3000 )
+print("Error:", rmse(predictions, ratings))
+
