@@ -59,3 +59,20 @@ class Bob:
             ws.append((w, i))
 
         return ws, vs
+
+    def predict(self, ps, pub, item):
+        c = Paillier(pub)
+        v = 0
+        for _, j in ps:
+            s = int(self.lsh.sim(item, j) * self.maxsim)
+            if s < 1:
+                continue
+            v += s
+        w = 1
+        for p, j in ps:
+            s = int(self.lsh.sim(item, j) * self.maxsim)
+            if s < 1:
+                continue
+            w *= pow(p, s, c.n2)
+
+        return w, v

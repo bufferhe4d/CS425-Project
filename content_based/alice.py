@@ -23,3 +23,6 @@ class Alice:
             r.append((self.c.dec(w[i][0]) / v[i][0], w[i][1]))
 
         return r
+
+    def calc_prediction(self, w, v):
+        return self.c.dec(w) / v
